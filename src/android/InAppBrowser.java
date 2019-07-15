@@ -123,6 +123,7 @@ public class InAppBrowser extends CordovaPlugin {
     private InAppBrowserDialog dialog;
     private WebView inAppWebView;
     private EditText edittext;
+    private ImageView imageview;
     private CallbackContext callbackContext;
     private boolean showLocationBar = true;
     private boolean showZoomControls = true;
@@ -802,7 +803,7 @@ public class InAppBrowser extends CordovaPlugin {
                 RelativeLayout toolbar = new RelativeLayout(cordova.getActivity());
                 //Please, no more black!
                 toolbar.setBackgroundColor(toolbarColor);
-                toolbar.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, this.dpToPixels(44)));
+                toolbar.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, this.dpToPixels(60)));
                 toolbar.setPadding(this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2));
                 if (leftToRight) {
                     toolbar.setHorizontalGravity(Gravity.LEFT);
@@ -873,6 +874,20 @@ public class InAppBrowser extends CordovaPlugin {
                         goForward();
                     }
                 });
+                // CUSTOM
+                imageview = new ImageView(cordova.getActivity());
+                RelativeLayout.LayoutParams imageviewLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+                imageviewLayoutParams.addRule(RelativeLayout.RIGHT_OF, 1);
+                imageviewLayoutParams.addRule(RelativeLayout.LEFT_OF, 5);
+                imageviewLayoutParams.setMargins(100, 0, 100, 0);
+                imageview.setLayoutParams(imageviewLayoutParams);
+                imageview.setId(Integer.valueOf(7));
+                int headerResId = activityRes.getIdentifier("header", "drawable", cordova.getActivity().getPackageName());
+                Drawable headerResImg = activityRes.getDrawable(headerResId);
+                imageview.setImageDrawable(headerResImg);
+                imageview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                if (Build.VERSION.SDK_INT >= 16)
+                imageview.getAdjustViewBounds();
 
                 // Edit Text Box
                 edittext = new EditText(cordova.getActivity());
@@ -901,7 +916,8 @@ public class InAppBrowser extends CordovaPlugin {
                 // Header Close/Done button
                 int closeButtonId = leftToRight ? 1 : 5;
                 View close = createCloseButton(closeButtonId);
-                toolbar.addView(close);
+                //toolbar.addView(close);
+                toolbar.addView(imageview);
 
                 // Footer
                 RelativeLayout footer = new RelativeLayout(cordova.getActivity());
@@ -1041,8 +1057,8 @@ public class InAppBrowser extends CordovaPlugin {
                 actionButtonContainer.addView(forward);
 
                 // Add the views to our toolbar if they haven't been disabled
-                if (!hideNavigationButtons) toolbar.addView(actionButtonContainer);
-                if (!hideUrlBar) toolbar.addView(edittext);
+                //if (!hideNavigationButtons) toolbar.addView(actionButtonContainer);
+                //if (!hideUrlBar) toolbar.addView(edittext);
 
                 // Don't add the toolbar if its been disabled
                 if (getShowLocationBar()) {
