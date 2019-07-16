@@ -879,7 +879,7 @@ public class InAppBrowser extends CordovaPlugin {
                 RelativeLayout.LayoutParams imageviewLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
                 imageviewLayoutParams.addRule(RelativeLayout.RIGHT_OF, 1);
                 imageviewLayoutParams.addRule(RelativeLayout.LEFT_OF, 5);
-                imageviewLayoutParams.setMargins(100, 0, 100, 0);
+                imageviewLayoutParams.setMargins(120, 0, 120, 0);
                 imageview.setLayoutParams(imageviewLayoutParams);
                 imageview.setId(Integer.valueOf(7));
                 int headerResId = activityRes.getIdentifier("header", "drawable", cordova.getActivity().getPackageName());
