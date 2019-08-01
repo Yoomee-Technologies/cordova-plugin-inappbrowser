@@ -50,6 +50,7 @@
 - (void)show:(CDVInvokedUrlCommand*)command;
 - (void)hide:(CDVInvokedUrlCommand*)command;
 - (void)loadAfterBeforeload:(CDVInvokedUrlCommand*)command;
+-(void)chiudi;
 
 @end
 
@@ -79,6 +80,7 @@
 @property (nonatomic, weak) id <CDVScreenOrientationDelegate> orientationDelegate;
 @property (nonatomic, weak) CDVUIInAppBrowser* navigationDelegate;
 @property (nonatomic) NSURL* currentURL;
+@property (retain, nonatomic) UIButton *backButtonZ;
 
 - (void)close;
 - (void)navigateTo:(NSURL*)url;
