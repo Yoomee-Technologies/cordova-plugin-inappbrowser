@@ -784,13 +784,13 @@ static CDVUIInAppBrowser* instance = nil;
     [self.view addSubview:self.spinner];
     
     //AGGIUNGO NAVBAR ZANICHELLI
-    UIView *navBarView=[[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 84)];
-    navBarView.backgroundColor = [self getUIColorObjectFromHexString:@"E30000" alpha:1.0];
-    navBarView.tag = 8;
-    [self.view addSubview:navBarView];
+    self.navBarView=[[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 84)];
+    self.navBarView.backgroundColor = [self getUIColorObjectFromHexString:@"E30000" alpha:1.0];
+    self.navBarView.tag = 8;
+    [self.view addSubview:self.navBarView];
     UIImageView* testataImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"logo-zanichelli.png"]];
-    testataImageView.center = CGPointMake(self.view.bounds.size.width/2, navBarView.frame.size.height/2+20);
-    [navBarView addSubview:testataImageView];
+    testataImageView.center = CGPointMake(self.view.bounds.size.width/2, self.navBarView.frame.size.height/2+20);
+    [self.navBarView addSubview:testataImageView];
     self.backButtonZ = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.backButtonZ setImage:[UIImage imageNamed:@"back.png"] forState:UIControlStateNormal];
     [self.backButtonZ addTarget:self
@@ -798,7 +798,7 @@ static CDVUIInAppBrowser* instance = nil;
                forControlEvents:UIControlEventTouchUpInside];
     [self.backButtonZ setTitle:@"" forState:UIControlStateNormal];
     self.backButtonZ.frame = CGRectMake(16.0, 46.0, 32.0, 32.0);
-    [navBarView addSubview:self.backButtonZ];
+    [self.navBarView addSubview:self.backButtonZ];
 }
 
 - (UIColor *)getUIColorObjectFromHexString:(NSString *)hexStr alpha:(CGFloat)alpha
@@ -1151,6 +1151,18 @@ static CDVUIInAppBrowser* instance = nil;
 
 - (BOOL)shouldAutorotate
 {
+    
+    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+    if (UIDeviceOrientationIsPortrait(orientation)){
+        CGRect webViewBounds = CGRectMake(0, 84, self.view.bounds.size.width, self.view.bounds.size.height-84);
+        self.webView.frame = webViewBounds;
+    } else {
+        //self.navBarView.bounds = CGRectNull;
+        //[self.navBarView removeFromSuperview];
+        self.webView.frame = self.view.frame;
+        [self.view bringSubviewToFront:self.webView];
+    }
+    
     if ((self.orientationDelegate != nil) && [self.orientationDelegate respondsToSelector:@selector(shouldAutorotate)]) {
         return [self.orientationDelegate shouldAutorotate];
     }
@@ -1162,13 +1174,14 @@ static CDVUIInAppBrowser* instance = nil;
     if ((self.orientationDelegate != nil) && [self.orientationDelegate respondsToSelector:@selector(supportedInterfaceOrientations)]) {
         return [self.orientationDelegate supportedInterfaceOrientations];
     }
-
+    
     return 1 << UIInterfaceOrientationPortrait;
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
     if ((self.orientationDelegate != nil) && [self.orientationDelegate respondsToSelector:@selector(shouldAutorotateToInterfaceOrientation:)]) {
+        
         return [self.orientationDelegate shouldAutorotateToInterfaceOrientation:interfaceOrientation];
     }
 
