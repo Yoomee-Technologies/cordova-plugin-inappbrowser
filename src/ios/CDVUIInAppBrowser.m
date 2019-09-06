@@ -784,12 +784,12 @@ static CDVUIInAppBrowser* instance = nil;
     [self.view addSubview:self.spinner];
     
     //AGGIUNGO NAVBAR ZANICHELLI
-    self.navBarView=[[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 84)];
+    self.navBarView=[[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 64)];
     self.navBarView.backgroundColor = [self getUIColorObjectFromHexString:@"E30000" alpha:1.0];
     self.navBarView.tag = 8;
     [self.view addSubview:self.navBarView];
     UIImageView* testataImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"logo-zanichelli.png"]];
-    testataImageView.center = CGPointMake(self.view.bounds.size.width/2, self.navBarView.frame.size.height/2+20);
+    testataImageView.center = CGPointMake(self.view.bounds.size.width/2, self.navBarView.frame.size.height/2+5);
     [self.navBarView addSubview:testataImageView];
     self.backButtonZ = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.backButtonZ setImage:[UIImage imageNamed:@"back.png"] forState:UIControlStateNormal];
@@ -797,7 +797,7 @@ static CDVUIInAppBrowser* instance = nil;
                          action:@selector(close)
                forControlEvents:UIControlEventTouchUpInside];
     [self.backButtonZ setTitle:@"" forState:UIControlStateNormal];
-    self.backButtonZ.frame = CGRectMake(16.0, 46.0, 32.0, 32.0);
+    self.backButtonZ.frame = CGRectMake(16.0, 26.0, 32.0, 32.0);
     [self.navBarView addSubview:self.backButtonZ];
 }
 
@@ -1154,7 +1154,7 @@ static CDVUIInAppBrowser* instance = nil;
     
     UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
     if (UIDeviceOrientationIsPortrait(orientation)){
-        CGRect webViewBounds = CGRectMake(0, 84, self.view.bounds.size.width, self.view.bounds.size.height-84);
+        CGRect webViewBounds = CGRectMake(0, 64, self.view.bounds.size.width, self.view.bounds.size.height-64);
         self.webView.frame = webViewBounds;
     } else {
         //self.navBarView.bounds = CGRectNull;
@@ -1186,6 +1186,13 @@ static CDVUIInAppBrowser* instance = nil;
     }
 
     return YES;
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+//    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
+//    CGRect webViewBounds = CGRectMake(0, 164, self.view.bounds.size.width, self.view.bounds.size.height-164);
+//    self.webView.frame = webViewBounds;
+    
 }
 
 @end
