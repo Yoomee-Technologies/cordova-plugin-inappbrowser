@@ -17,6 +17,8 @@
  under the License.
  */
 
+#if !WK_WEB_VIEW_ONLY
+
 #import "CDVUIInAppBrowser.h"
 #import <Cordova/CDVPluginResult.h>
 #import <Cordova/CDVUserAgentUtil.h>
@@ -363,6 +365,7 @@ static CDVUIInAppBrowser* instance = nil;
 
 - (void)injectDeferredObject:(NSString*)source withWrapper:(NSString*)jsWrapper
 {
+    [self createIframeBridge];
     if (jsWrapper != nil) {
         NSData* jsonData = [NSJSONSerialization dataWithJSONObject:@[source] options:0 error:nil];
         NSString* sourceArrayString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
@@ -565,7 +568,6 @@ static CDVUIInAppBrowser* instance = nil;
 
 - (void)webViewDidFinishLoad:(UIWebView*)theWebView
 {
-    [self createIframeBridge];
     if (self.callbackId != nil) {
         // TODO: It would be more useful to return the URL the page is actually on (e.g. if it's been redirected).
         NSString* url = [self.inAppBrowserViewController.currentURL absoluteString];
@@ -648,11 +650,9 @@ static CDVUIInAppBrowser* instance = nil;
 {
     // We create the views in code for primarily for ease of upgrades and not requiring an external .xib to be included
 
-    //CGRect webViewBounds = self.view.bounds;
-    CGRect webViewBounds = CGRectMake(0, 84, self.view.bounds.size.width, self.view.bounds.size.height-84);
+    CGRect webViewBounds = self.view.bounds;
     BOOL toolbarIsAtBottom = ![_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop];
-    //webViewBounds.size.height -= _browserOptions.location ? FOOTER_HEIGHT : TOOLBAR_HEIGHT;
-    webViewBounds.size.height -= 84.0;
+    webViewBounds.size.height -= _browserOptions.location ? FOOTER_HEIGHT : TOOLBAR_HEIGHT;
     self.webView = [[UIWebView alloc] initWithFrame:webViewBounds];
 
     self.webView.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
@@ -710,8 +710,7 @@ static CDVUIInAppBrowser* instance = nil;
     self.toolbar.opaque = NO;
     self.toolbar.userInteractionEnabled = YES;
     if (_browserOptions.toolbarcolor != nil) { // Set toolbar color if user sets it in options
-      //self.toolbar.barTintColor = [self colorFromHexString:_browserOptions.toolbarcolor];
-        self.toolbar.barTintColor = [UIColor redColor];
+      self.toolbar.barTintColor = [self colorFromHexString:_browserOptions.toolbarcolor];
     }
     if (!_browserOptions.toolbartranslucent) { // Set toolbar translucent to no if user sets it in options
       self.toolbar.translucent = NO;
@@ -778,63 +777,15 @@ static CDVUIInAppBrowser* instance = nil;
         [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     }
 
-    //self.view.backgroundColor = [UIColor grayColor];
+    self.view.backgroundColor = [UIColor grayColor];
     [self.view addSubview:self.toolbar];
-    //[self.view addSubview:self.addressLabel];
+    [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
-    
-    //AGGIUNGO NAVBAR ZANICHELLI
-    self.navBarView=[[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 64)];
-    self.navBarView.backgroundColor = [self getUIColorObjectFromHexString:@"E30000" alpha:1.0];
-    self.navBarView.tag = 8;
-    [self.view addSubview:self.navBarView];
-    UIImageView* testataImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"logo-zanichelli.png"]];
-    testataImageView.center = CGPointMake(self.view.bounds.size.width/2, self.navBarView.frame.size.height/2+5);
-    [self.navBarView addSubview:testataImageView];
-    self.backButtonZ = [UIButton buttonWithType:UIButtonTypeCustom];
-    [self.backButtonZ setImage:[UIImage imageNamed:@"back.png"] forState:UIControlStateNormal];
-    [self.backButtonZ addTarget:self
-                         action:@selector(close)
-               forControlEvents:UIControlEventTouchUpInside];
-    [self.backButtonZ setTitle:@"" forState:UIControlStateNormal];
-    self.backButtonZ.frame = CGRectMake(16.0, 26.0, 32.0, 32.0);
-    [self.navBarView addSubview:self.backButtonZ];
-}
-
-- (UIColor *)getUIColorObjectFromHexString:(NSString *)hexStr alpha:(CGFloat)alpha
-{
-    // Convert hex string to an integer
-    unsigned int hexint = [self intFromHexString:hexStr];
-    
-    // Create color object, specifying alpha as well
-    UIColor *color =
-    [UIColor colorWithRed:((CGFloat) ((hexint & 0xFF0000) >> 16))/255
-                    green:((CGFloat) ((hexint & 0xFF00) >> 8))/255
-                     blue:((CGFloat) (hexint & 0xFF))/255
-                    alpha:alpha];
-    
-    return color;
-}
-
-- (unsigned int)intFromHexString:(NSString *)hexStr
-{
-    unsigned int hexInt = 0;
-    
-    // Create scanner
-    NSScanner *scanner = [NSScanner scannerWithString:hexStr];
-    
-    // Tell scanner to skip the # character
-    [scanner setCharactersToBeSkipped:[NSCharacterSet characterSetWithCharactersInString:@"#"]];
-    
-    // Scan hex value
-    [scanner scanHexInt:&hexInt];
-    
-    return hexInt;
 }
 
 - (void) setWebViewFrame : (CGRect) frame {
     NSLog(@"Setting the WebView's frame to %@", NSStringFromCGRect(frame));
-    //[self.webView setFrame:frame];
+    [self.webView setFrame:frame];
 }
 
 - (void)setCloseButtonTitle:(NSString*)title : (NSString*) colorString : (int) buttonIndex
@@ -1060,8 +1011,8 @@ static CDVUIInAppBrowser* instance = nil;
 
 - (void) rePositionViews {
     if ([_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop]) {
-        //[self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT, self.webView.frame.size.width, self.webView.frame.size.height)];
-        //[self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
+        [self.webView setFrame:CGRectMake(self.webView.frame.origin.x, TOOLBAR_HEIGHT, self.webView.frame.size.width, self.webView.frame.size.height)];
+        [self.toolbar setFrame:CGRectMake(self.toolbar.frame.origin.x, [self getStatusBarOffset], self.toolbar.frame.size.width, self.toolbar.frame.size.height)];
     }
 }
 
@@ -1151,18 +1102,6 @@ static CDVUIInAppBrowser* instance = nil;
 
 - (BOOL)shouldAutorotate
 {
-    
-    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-    if (UIDeviceOrientationIsPortrait(orientation)){
-        CGRect webViewBounds = CGRectMake(0, 64, self.view.bounds.size.width, self.view.bounds.size.height-64);
-        self.webView.frame = webViewBounds;
-    } else {
-        //self.navBarView.bounds = CGRectNull;
-        //[self.navBarView removeFromSuperview];
-        self.webView.frame = self.view.frame;
-        [self.view bringSubviewToFront:self.webView];
-    }
-    
     if ((self.orientationDelegate != nil) && [self.orientationDelegate respondsToSelector:@selector(shouldAutorotate)]) {
         return [self.orientationDelegate shouldAutorotate];
     }
@@ -1174,27 +1113,19 @@ static CDVUIInAppBrowser* instance = nil;
     if ((self.orientationDelegate != nil) && [self.orientationDelegate respondsToSelector:@selector(supportedInterfaceOrientations)]) {
         return [self.orientationDelegate supportedInterfaceOrientations];
     }
-    
+
     return 1 << UIInterfaceOrientationPortrait;
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
     if ((self.orientationDelegate != nil) && [self.orientationDelegate respondsToSelector:@selector(shouldAutorotateToInterfaceOrientation:)]) {
-        
         return [self.orientationDelegate shouldAutorotateToInterfaceOrientation:interfaceOrientation];
     }
 
     return YES;
 }
 
-- (void)viewWillDisappear:(BOOL)animated {
-//    UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-//    CGRect webViewBounds = CGRectMake(0, 164, self.view.bounds.size.width, self.view.bounds.size.height-164);
-//    self.webView.frame = webViewBounds;
-    
-}
-
 @end
 
-
+#endif

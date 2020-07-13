@@ -80,6 +80,7 @@ static CDVWKInAppBrowser* instance = nil;
         NSLog(@"IAB.close() called but it was already closed.");
         return;
     }
+    
     // Things are cleaned up in browserExit.
     [self.inAppBrowserViewController close];
 }
@@ -233,6 +234,7 @@ static CDVWKInAppBrowser* instance = nil;
     }
     // Set Presentation Style
     UIModalPresentationStyle presentationStyle = UIModalPresentationFullScreen; // default
+    //UIModalPresentationStyle presentationStyle = UIModalPresentationNone;
     if (browserOptions.presentationstyle != nil) {
         if ([[browserOptions.presentationstyle lowercaseString] isEqualToString:@"pagesheet"]) {
             presentationStyle = UIModalPresentationPageSheet;
@@ -266,6 +268,8 @@ static CDVWKInAppBrowser* instance = nil;
         }
     }
     
+    //self.inAppBrowserViewController.webView.frame = CGRectMake(200, 380, self.inAppBrowserViewController.webView.frame.size.width, 400);
+    
     // use of beforeload event
     if([browserOptions.beforeload isKindOfClass:[NSString class]]){
         _beforeload = browserOptions.beforeload;
@@ -275,7 +279,9 @@ static CDVWKInAppBrowser* instance = nil;
     _waitForBeforeload = ![_beforeload isEqualToString:@""];
     
     [self.inAppBrowserViewController navigateTo:url];
-    [self show:nil withNoAnimate:browserOptions.hidden];
+    if (!browserOptions.hidden) {
+        [self show:nil withNoAnimate:browserOptions.hidden];
+    }
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command{
@@ -306,6 +312,26 @@ static CDVWKInAppBrowser* instance = nil;
                                                         initWithRootViewController:self.inAppBrowserViewController];
     nav.orientationDelegate = self.inAppBrowserViewController;
     nav.navigationBarHidden = YES;
+    [nav.navigationBar setBackgroundColor:[self getUIColorObjectFromHexString2:@"E30000" alpha:1.0]];
+    [nav.navigationBar setTranslucent:NO];
+    //[nav.navigationBar setBarStyle:UIBarStyleDefault];
+    [nav.navigationBar setTintColor:[self getUIColorObjectFromHexString2:@"E30000" alpha:1.0]];
+    
+//    UIButton * backButton = [UIButton buttonWithType:UIButtonTypeCustom];
+//    [backButton addTarget:self action:@selector() forControlEvents:UIControlEventTouchUpInside];
+//    [backButton setFrame:FRAME_DEFINE
+//    [backButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentLeft];
+//    [backButton setExclusiveTouch:YES];
+//    [backButton setImage:[UIImage imageNamed:BACK_BUTTON_DEFAULT_ICON] forState:UIControlStateNormal];
+//    [backButton setTitle:@"BACK" forState:UIControlStateNormal];
+//    [backButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+//    UIBarButtonItem *backMenuBarButton = [[UIBarButtonItem alloc] initWithCustomView:backButton];
+//    self.navigationItem.leftBarButtonItem = backMenuBarButton;
+    
+    
+    //[nav.navigationBar setBackgroundImage:[UIImage imageNamed:@"logo-zanichelli"] forBarMetrics:UIBarMetricsDefault];
+    //navigationBarAppearance.setBackgroundImage(backImageForLandscapePhoneBarMetrics, for: .compact)
+    
     nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;
     
     __weak CDVWKInAppBrowser* weakSelf = self;
@@ -314,27 +340,66 @@ static CDVWKInAppBrowser* instance = nil;
     dispatch_async(dispatch_get_main_queue(), ^{
         if (weakSelf.inAppBrowserViewController != nil) {
             float osVersion = [[[UIDevice currentDevice] systemVersion] floatValue];
-            CGRect frame = [[UIScreen mainScreen] bounds];
-            if(initHidden && osVersion < 11){
-                frame.origin.x = -10000;
+            __strong __typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf->tmpWindow) {
+                CGRect frame = [[UIScreen mainScreen] bounds];
+                if(initHidden && osVersion < 11){
+                   frame.origin.x = -10000;
+                }
+                //frame.origin.y = 150;
+                strongSelf->tmpWindow = [[UIWindow alloc] initWithFrame:frame];
             }
-            
-            UIWindow *tmpWindow = [[UIWindow alloc] initWithFrame:frame];
             UIViewController *tmpController = [[UIViewController alloc] init];
-            
-            [tmpWindow setRootViewController:tmpController];
-            [tmpWindow setWindowLevel:UIWindowLevelNormal];
-            
+
+            [strongSelf->tmpWindow setRootViewController:tmpController];
+            [strongSelf->tmpWindow setWindowLevel:UIWindowLevelNormal];
+
             if(!initHidden || osVersion < 11){
-            [tmpWindow makeKeyAndVisible];
+                [self->tmpWindow makeKeyAndVisible];
             }
             [tmpController presentViewController:nav animated:!noAnimate completion:nil];
+            //[tmpController.navigationController pushViewController:self.inAppBrowserViewController animated:YES];
         }
     });
 }
 
+- (UIColor *)getUIColorObjectFromHexString2:(NSString *)hexStr alpha:(CGFloat)alpha
+{
+    // Convert hex string to an integer
+    unsigned int hexint = [self intFromHexString:hexStr];
+    
+    // Create color object, specifying alpha as well
+    UIColor *color =
+    [UIColor colorWithRed:((CGFloat) ((hexint & 0xFF0000) >> 16))/255
+                    green:((CGFloat) ((hexint & 0xFF00) >> 8))/255
+                     blue:((CGFloat) (hexint & 0xFF))/255
+                    alpha:alpha];
+    
+    return color;
+}
+
+- (unsigned int)intFromHexString:(NSString *)hexStr
+{
+    unsigned int hexInt = 0;
+    
+    // Create scanner
+    NSScanner *scanner = [NSScanner scannerWithString:hexStr];
+    
+    // Tell scanner to skip the # character
+    [scanner setCharactersToBeSkipped:[NSCharacterSet characterSetWithCharactersInString:@"#"]];
+    
+    // Scan hex value
+    [scanner scanHexInt:&hexInt];
+    
+    return hexInt;
+}
+
 - (void)hide:(CDVInvokedUrlCommand*)command
 {
+    // Set tmpWindow to hidden to make main webview responsive to touch again
+    // https://stackoverflow.com/questions/4544489/how-to-remove-a-uiwindow
+    self->tmpWindow.hidden = YES;
+
     if (self.inAppBrowserViewController == nil) {
         NSLog(@"Tried to hide IAB after it was closed.");
         return;
@@ -690,6 +755,10 @@ static CDVWKInAppBrowser* instance = nil;
     // Set navigationDelegate to nil to ensure no callbacks are received from it.
     self.inAppBrowserViewController.navigationDelegate = nil;
     self.inAppBrowserViewController = nil;
+
+    // Set tmpWindow to hidden to make main webview responsive to touch again
+    // Based on https://stackoverflow.com/questions/4544489/how-to-remove-a-uiwindow
+    self->tmpWindow.hidden = YES;
     
     if (IsAtLeastiOSVersion(@"7.0")) {
         if (_previousStatusBarStyle != -1) {
@@ -732,13 +801,46 @@ BOOL isExiting = FALSE;
     //NSLog(@"dealloc");
 }
 
+- (UIColor *)getUIColorObjectFromHexString:(NSString *)hexStr alpha:(CGFloat)alpha
+{
+    // Convert hex string to an integer
+    unsigned int hexint = [self intFromHexString:hexStr];
+    
+    // Create color object, specifying alpha as well
+    UIColor *color =
+    [UIColor colorWithRed:((CGFloat) ((hexint & 0xFF0000) >> 16))/255
+                    green:((CGFloat) ((hexint & 0xFF00) >> 8))/255
+                     blue:((CGFloat) (hexint & 0xFF))/255
+                    alpha:alpha];
+    
+    return color;
+}
+
+- (unsigned int)intFromHexString:(NSString *)hexStr
+{
+    unsigned int hexInt = 0;
+    
+    // Create scanner
+    NSScanner *scanner = [NSScanner scannerWithString:hexStr];
+    
+    // Tell scanner to skip the # character
+    [scanner setCharactersToBeSkipped:[NSCharacterSet characterSetWithCharactersInString:@"#"]];
+    
+    // Scan hex value
+    [scanner scanHexInt:&hexInt];
+    
+    return hexInt;
+}
+
 - (void)createViews
 {
     // We create the views in code for primarily for ease of upgrades and not requiring an external .xib to be included
     
     CGRect webViewBounds = self.view.bounds;
     BOOL toolbarIsAtBottom = ![_browserOptions.toolbarposition isEqualToString:kInAppBrowserToolbarBarPositionTop];
-    webViewBounds.size.height -= _browserOptions.location ? FOOTER_HEIGHT : TOOLBAR_HEIGHT;
+    //webViewBounds.size.height -= _browserOptions.location ? FOOTER_HEIGHT : TOOLBAR_HEIGHT;
+    //MIRCO
+    webViewBounds.size.height -= TOOLBAR_HEIGHT;
     WKUserContentController* userContentController = [[WKUserContentController alloc] init];
     
     WKWebViewConfiguration* configuration = [[WKWebViewConfiguration alloc] init];
@@ -763,15 +865,35 @@ BOOL isExiting = FALSE;
     
     
 
-    self.webView = [[WKWebView alloc] initWithFrame:webViewBounds configuration:configuration];
+    //self.webView = [[WKWebView alloc] initWithFrame:webViewBounds configuration:configuration];
+    self.webView = [[WKWebView alloc] initWithFrame:CGRectMake(0, 84, webViewBounds.size.width, webViewBounds.size.height) configuration:configuration];
+    
+    
     
     [self.view addSubview:self.webView];
     [self.view sendSubviewToBack:self.webView];
     
+    //AGGIUNGO BARRA DI NAVIGAZIONE ZANICHELLI
+    UIView *navBarView=[[UIView alloc]initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 84)];
+    navBarView.backgroundColor = [self getUIColorObjectFromHexString:@"E30000" alpha:1.0];
+    navBarView.tag = 8;
+    [self.view addSubview:navBarView];
+    UIImageView* testataImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"logo-zanichelli.png"]];
+    testataImageView.center = CGPointMake(self.view.bounds.size.width/2, 84/2 + 20);
+    [navBarView addSubview:testataImageView];
+    UIButton* backButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [backButton setImage:[UIImage imageNamed:@"back.png"] forState:UIControlStateNormal];
+    [backButton addTarget:self
+                        action:@selector(close)
+              forControlEvents:UIControlEventTouchUpInside];
+    [backButton setTitle:@"" forState:UIControlStateNormal];
+    backButton.frame = CGRectMake(0.0, 16.0 + 34.0, 24.0, 24.0);
+    [navBarView addSubview:backButton];
+    [self.view addSubview:navBarView];
     
     self.webView.navigationDelegate = self;
     self.webView.UIDelegate = self.webViewUIDelegate;
-    self.webView.backgroundColor = [UIColor whiteColor];
+    self.webView.backgroundColor = [UIColor redColor];
     
     self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
@@ -780,13 +902,13 @@ BOOL isExiting = FALSE;
     self.webView.opaque = YES;
     self.webView.userInteractionEnabled = YES;
     self.automaticallyAdjustsScrollViewInsets = YES ;
-    [self.webView setAutoresizingMask:UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth];
+    [self.webView setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
     self.webView.allowsLinkPreview = NO;
     self.webView.allowsBackForwardNavigationGestures = NO;
     
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
    if (@available(iOS 11.0, *)) {
-	   [self.webView.scrollView setContentInsetAdjustmentBehavior:UIScrollViewContentInsetAdjustmentNever];
+       [self.webView.scrollView setContentInsetAdjustmentBehavior:UIScrollViewContentInsetAdjustmentNever];
    }
 #endif
     
@@ -824,13 +946,14 @@ BOOL isExiting = FALSE;
     self.toolbar.clearsContextBeforeDrawing = NO;
     self.toolbar.clipsToBounds = NO;
     self.toolbar.contentMode = UIViewContentModeScaleToFill;
-    self.toolbar.hidden = NO;
+    self.toolbar.hidden = YES;
     self.toolbar.multipleTouchEnabled = NO;
     self.toolbar.opaque = NO;
     self.toolbar.userInteractionEnabled = YES;
     if (_browserOptions.toolbarcolor != nil) { // Set toolbar color if user sets it in options
-      self.toolbar.barTintColor = [self colorFromHexString:_browserOptions.toolbarcolor];
+      self.toolbar.barTintColor = [self colorFromHexString:@"E30000"];
     }
+    self.toolbar.barTintColor = [self colorFromHexString:@"E30000"];
     if (!_browserOptions.toolbartranslucent) { // Set toolbar translucent to no if user sets it in options
       self.toolbar.translucent = NO;
     }
@@ -904,7 +1027,7 @@ BOOL isExiting = FALSE;
 
 - (void) setWebViewFrame : (CGRect) frame {
     NSLog(@"Setting the WebView's frame to %@", NSStringFromCGRect(frame));
-    [self.webView setFrame:frame];
+    [self.webView setFrame:CGRectMake(0,84 , frame.size.width, frame.size.height)];
 }
 
 - (void)setCloseButtonTitle:(NSString*)title : (NSString*) colorString : (int) buttonIndex
@@ -1108,12 +1231,13 @@ BOOL isExiting = FALSE;
     if (IsAtLeastiOSVersion(@"7.0") && !viewRenderedAtLeastOnce) {
         viewRenderedAtLeastOnce = TRUE;
         CGRect viewBounds = [self.webView bounds];
-        viewBounds.origin.y = STATUSBAR_HEIGHT;
-        viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
+        // MIRCO
+        viewBounds.origin.y = 84;
+        viewBounds.size.height = viewBounds.size.height - 84;
         self.webView.frame = viewBounds;
         [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
     }
-    [self rePositionViews];
+    //[self rePositionViews];
     
     [super viewWillAppear:animated];
 }
